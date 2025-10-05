@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AC Generator Dashboard — Variant C</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<style>
+  :root { --bg:#0b1220; --card:#111a2b; --ink:#e9eefc; --muted:#9fb0d6; --accent:#7aa2ff; }
+  body{margin:0;background:var(--bg);color:var(--ink);font:500 14px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  header{padding:18px 20px;border-bottom:1px solid #1b2740}
+  h1{font-size:18px;margin:0 0 4px}
+  .sub{color:var(--muted)}
+  .wrap{display:grid;grid-template-columns:280px 1fr;gap:16px;padding:16px}
+  .card{background:var(--card);border:1px solid #1b2740;border-radius:14px;padding:14px}
+  label{display:block;margin:8px 0 6px;color:var(--muted)}
+  input[type="range"]{width:100%}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .kv{display:flex;justify-content:space-between;margin:2px 0;color:var(--muted)}
+  .kv b{color:var(--ink)}
+  button{background:var(--accent);color:#081022;border:none;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid #2b3b63;color:var(--ink)}
+  .grid{display:grid;grid-template-columns:1fr;gap:14px}
+  canvas{background:#0b1220;border-radius:10px}
+  .small{font-size:12px;color:var(--muted)}
+  .inline{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:8px}
+  .stat{background:#0b1220;border:1px solid #1b2740;border-radius:10px;padding:10px}
+  .stat h4{margin:0 0 6px;font-size:12px;color:var(--muted)}
+  .stat b{font-size:16px}
+  @media (max-width: 920px){ .wrap{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<header>
+  <h1>AC Generator Measurement Dashboard <span class="sub">— Variant C (N=200, A=0.0024 m²)</span></h1>
+</header>
+
+<div class="wrap">
+  <!-- Controls -------------------------------------------------------------->
+  <div class="card">
+    <label>Speed n (rpm): <b id="rpmVal">2000</b></label>
+    <input id="rpm" type="range" min="800" max="3200" value="2000" step="50">
+
+    <label>Magnetic field B (tesla): <b id="bVal">0.331</b></label>
+    <input id="B" type="range" min="0.20" max="0.60" value="0.331" step="0.001">
+
+    <label>Capacitance C (µF): <b id="cVal">75</b></label>
+    <input id="C" type="range" min="10" max="150" value="75" step="1">
+
+    <div class="row">
+      <div class="kv"><span>Frequency f (Hz)</span><b id="fOut">33.33</b></div>
+      <div class="kv"><span>ω (rad/s)</span><b id="wOut">209.44</b></div>
+    </div>
+    <div class="row">
+      <div class="kv"><span>V<sub>peak</sub> (V)</span><b id="vpOut">33.3</b></div>
+      <div class="kv"><span>V<sub>rms</sub> (V)</span><b id="vrOut">23.6</b></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><h4>I<sub>peak</sub> (A)</h4><b id="ipOut">0.00</b></div>
+      <div class="stat"><h4>I<sub>rms</sub> (A)</h4><b id="irOut">0.00</b></div>
+      <div class="stat"><h4>⟨P⟩ over 2T (W)</h4><b id="pavgOut">0.00</b></div>
+    </div>
+
+    <div style="height:10px"></div>
+    <div class="inline">
+      <button id="play">Play tone</button>
+      <button class="ghost" id="stop">Stop tone</button>
+      <button class="ghost" id="csv">Export CSV</button>
+    </div>
+    <div class="small">Tone uses Web Audio API at frequency f. CSV includes time, v(t), i(t), p(t) over two periods.</div>
+  </div>
+
+  <!-- Plots ----------------------------------------------------------------->
+  <div class="grid">
+    <div class="card">
+      <canvas id="chartVI" height="200"></canvas>
+    </div>
+    <div class="card">
+      <canvas id="chartP" height="160"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- constants for Variant C ---------- */
+const N = 200;
+const A = 0.04 * 0.06; // m^2
+
+/* ---------- controls ---------- */
+const rpm = document.getElementById('rpm');
+const B   = document.getElementById('B');
+const Cuf = document.getElementById('C');
+
+const rpmVal = document.getElementById('rpmVal');
+const bVal   = document.getElementById('bVal');
+const cVal   = document.getElementById('cVal');
+
+const fOut = document.getElementById('fOut');
+const wOut = document.getElementById('wOut');
+const vpOut = document.getElementById('vpOut');
+const vrOut = document.getElementById('vrOut');
+const ipOut = document.getElementById('ipOut');
+const irOut = document.getElementById('irOut');
+const pavgOut = document.getElementById('pavgOut');
+
+/* ---------- audio ---------- */
+let audioCtx = null, osc = null, gain = null;
+function startTone(freq){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if(osc) osc.stop();
+  osc = audioCtx.createOscillator();
+  gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  gain.gain.value = 0.1; // gentle volume
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+}
+function stopTone(){ if(osc){ osc.stop(); osc.disconnect(); osc=null; }}
+
+/* ---------- helpers ---------- */
+function linspace(a,b,n){
+  const out = new Array(n);
+  const step=(b-a)/(n-1);
+  for(let i=0;i<n;i++) out[i]=a+i*step;
+  return out;
+}
+function mean(arr){ return arr.reduce((s,x)=>s+x,0)/arr.length; }
+function rms(arr){ return Math.sqrt(mean(arr.map(x=>x*x))); }
+function peak(arr){ return Math.max(...arr.map(x=>Math.abs(x))); }
+
+/* ---------- charts ---------- */
+const chartVI = new Chart(document.getElementById('chartVI'),{
+  type:'line',
+  data:{ labels:[], datasets:[
+    {label:'v(t) [V]', data:[], borderWidth:2, pointRadius:0, tension:0.1},
+    {label:'i(t) [A]', data:[], borderWidth:2, pointRadius:0, tension:0.1}
+  ]},
+  options:{ responsive:true, maintainAspectRatio:false,
+    scales:{ x:{ ticks:{color:'#9fb0d6'}}, y:{ticks:{color:'#9fb0d6'}}},
+    plugins:{ legend:{labels:{color:'#e9eefc'}}}
+  }
+});
+const chartP = new Chart(document.getElementById('chartP'),{
+  type:'line',
+  data:{ labels:[], datasets:[
+    {label:'p(t) [W]', data:[], borderWidth:2, pointRadius:0, tension:0.1}
+  ]},
+  options:{ responsive:true, maintainAspectRatio:false,
+    scales:{ x:{ ticks:{color:'#9fb0d6'}}, y:{ticks:{color:'#9fb0d6'}}},
+    plugins:{ legend:{labels:{color:'#e9eefc'}}}
+  }
+});
+
+/* ---------- core update ---------- */
+function update(){
+  // read UI
+  const n = Number(rpm.value);
+  const Bv = Number(B.value);
+  const Cval = Number(Cuf.value)*1e-6; // F
+
+  rpmVal.textContent = n.toFixed(0);
+  bVal.textContent   = Bv.toFixed(3);
+  cVal.textContent   = Number(Cuf.value).toFixed(0);
+
+  // physics
+  const f = n/60;
+  const omega = 2*Math.PI*f;
+  const Vm = N*A*Bv*omega; // Faraday
+  const Im = omega*Cval*Vm; // capacitor current amplitude
+
+  // time over two periods
+  const T = 1/f;
+  const t = linspace(0,2*T,1200);
+
+  const v = t.map(tt => Vm*Math.sin(omega*tt));
+  const i = t.map(tt => Im*Math.sin(omega*tt + Math.PI/2));
+  const p = v.map((vv,k)=> vv*i[k]);
+
+  // numbers
+  fOut.textContent = f.toFixed(2);
+  wOut.textContent = omega.toFixed(2);
+  vpOut.textContent = Vm.toFixed(2);
+  vrOut.textContent = (Vm/Math.SQRT2).toFixed(2);
+  ipOut.textContent = Im.toFixed(3);
+  irOut.textContent = (Im/Math.SQRT2).toFixed(3);
+  pavgOut.textContent = mean(p).toFixed(2);
+
+  // charts
+  const labels = t.map(tt => tt.toFixed(4));
+  chartVI.data.labels = labels;
+  chartVI.data.datasets[0].data = v;
+  chartVI.data.datasets[1].data = i;
+  chartVI.update();
+
+  chartP.data.labels = labels;
+  chartP.data.datasets[0].data = p;
+  chartP.update();
+
+  return {t,v,i,p,f,omega,Vm,Im};
+}
+
+[rpm,B,Cuf].forEach(el => el.addEventListener('input', update));
+update();
+
+/* ---------- audio buttons ---------- */
+document.getElementById('play').addEventListener('click', ()=>{
+  const n = Number(rpm.value);
+  const f = n/60;
+  startTone(f);
+});
+document.getElementById('stop').addEventListener('click', stopTone);
+
+/* ---------- CSV export ---------- */
+document.getElementById('csv').addEventListener('click', ()=>{
+  const run = update();
+  let csv = 'time_s,v_V,i_A,p_W\n';
+  for(let k=0;k<run.t.length;k++){
+    csv += `${run.t[k]},${run.v[k]},${run.i[k]},${run.p[k]}\n`;
+  }
+  const blob = new Blob([csv],{type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'variantC_run.csv';
+  document.body.appendChild(a); a.click();
+  URL.revokeObjectURL(url); a.remove();
+});
+</script>
+</body>
+</html>
