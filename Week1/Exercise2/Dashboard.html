@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AC Elements Dashboard — Variant C</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Plotly for interactive charts -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <style>
+    :root { --pad: 14px; --gap: 12px; font-family: system-ui, Arial, sans-serif; }
+    body { margin: 0; background:#0b1220; color:#e9eef5; }
+    header { padding: var(--pad) calc(var(--pad) * 1.5); border-bottom: 1px solid #1f2a44; }
+    h1 { margin: 0; font-size: 20px; }
+    .wrap { padding: var(--pad) calc(var(--pad) * 1.5); display: grid; gap: var(--gap); }
+    .panel { background:#0f1a33; border:1px solid #1f2a44; border-radius:12px; padding: var(--pad); }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--gap); }
+    .control { display:flex; flex-direction:column; gap:6px; }
+    input[type="range"] { width:100%; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .kpi { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap:10px; }
+    .kpi > div { background:#0b152a; border:1px solid #1f2a44; border-radius:10px; padding:10px; }
+    .chart { height: 420px; }
+    code { background:#091125; padding:2px 6px; border-radius:6px; border:1px solid #1f2a44; }
+    a.btn, button.btn { background:#1a45ff; color:white; padding:8px 12px; border-radius:8px; border:none; text-decoration:none; }
+    a.btn:hover, button.btn:hover { filter:brightness(1.1); cursor:pointer; }
+    .small { opacity:0.8; font-size:13px; }
+    label { font-size:14px; opacity:0.9; }
+    select, input[type="number"] { padding:6px 8px; border-radius:8px; border:1px solid #1f2a44; background:#0b152a; color:#e9eef5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Exercise 2 — Web Dashboard (R, L, C) · Variant C</h1>
+    <div class="small">Source: <code>v(t)=V<sub>m</sub> sin(ωt)</code> with <code>V<sub>m</sub>=80 V</code>.
+      R=40 Ω, L=0.1 H, C=50 μF. Default f≈100 Hz.</div>
+  </header>
+
+  <div class="wrap">
+    <div class="panel controls">
+      <div class="control">
+        <label><b>Element</b></label>
+        <select id="element">
+          <option value="R">Resistor (R=40 Ω)</option>
+          <option value="L">Inductor (L=0.1 H)</option>
+          <option value="C">Capacitor (C=50 μF)</option>
+        </select>
+      </div>
+
+      <div class="control">
+        <label><b>Frequency f (Hz)</b> <span class="small" id="fLabel"></span></label>
+        <input type="range" id="f" min="10" max="500" step="1" value="100"/>
+        <input type="number" id="fNum" min="10" max="500" step="1" value="100"/>
+      </div>
+
+      <div class="control">
+        <label><b>Number of periods to display</b></label>
+        <input type="number" id="periods" min="1" max="6" step="1" value="2"/>
+      </div>
+
+      <div class="control">
+        <label><b>Samples</b> <span class="small">(higher = smoother)</span></label>
+        <input type="number" id="samples" min="200" max="6000" step="200" value="2000"/>
+      </div>
+
+      <!-- AUDIO CONTROLS -->
+      <div class="control">
+        <label><b>Audio (Web Audio API)</b> <span class="small" id="audioState">stopped</span></label>
+        <div class="row">
+          <button id="playBtn" class="btn">▶ Play tone</button>
+          <button id="stopBtn" class="btn">■ Stop</button>
+          <span class="small">Volume</span>
+          <input type="range" id="vol" min="0" max="100" value="15" />
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div id="chart" class="chart"></div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0;">Numerical readout</h3>
+      <div class="kpi">
+        <div><b>Frequency (Hz)</b><br><span id="k_f">—</span></div>
+        <div><b>ω (rad/s)</b><br><span id="k_w">—</span></div>
+        <div><b>Reactance |X| (Ω)</b><br><span id="k_x">—</span></div>
+        <div><b>I<sub>peak</sub> (A)</b><br><span id="k_ip">—</span></div>
+        <div><b>I<sub>rms</sub> (A)</b><br><span id="k_irms">—</span></div>
+        <div><b>Avg power ⟨P⟩ (W)</b><br><span id="k_pavg">—</span></div>
+      </div>
+      <div class="small" style="margin-top:8px;">
+        Conventions: passive sign; <code>p(t)=v(t)i(t)</code>. Inductor current lags 90°, capacitor current leads 90°.
+      </div>
+    </div>
+
+    <div class="panel small">
+      <b>How to use:</b> choose element, set frequency, and the plot + numbers update.
+      Use <b>Play tone</b> to hear a sine wave at the same frequency (volume-limited).
+    </div>
+  </div>
+
+  <script>
+    // ====== Constants (Variant C) ======
+    const Vm = 80;
+    const R  = 40;
+    const L  = 0.1;
+    const C  = 50e-6;
+
+    // ====== DOM ======
+    const elElement = document.getElementById('element');
+    const elF       = document.getElementById('f');
+    const elFNum    = document.getElementById('fNum');
+    const elFLabel  = document.getElementById('fLabel');
+    const elPeriods = document.getElementById('periods');
+    const elSamples = document.getElementById('samples');
+    const elReset   = document.getElementById('reset');
+    const elPNG     = document.getElementById('png'); // may not exist if you removed the button
+    // KPIs
+    const k_f = document.getElementById('k_f');
+    const k_w = document.getElementById('k_w');
+    const k_x = document.getElementById('k_x');
+    const k_ip = document.getElementById('k_ip');
+    const k_irms = document.getElementById('k_irms');
+    const k_pavg = document.getElementById('k_pavg');
+
+    // ====== Audio (Web Audio API) ======
+    const playBtn = document.getElementById('playBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const volCtrl = document.getElementById('vol');
+    const audioState = document.getElementById('audioState');
+
+    let audioCtx = null;
+    let osc = null;
+    let gain = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        gain = audioCtx.createGain();
+        gain.gain.value = Number(volCtrl.value) / 100 * 0.5; // cap overall loudness
+        gain.connect(audioCtx.destination);
+      }
+    }
+
+    function startTone(freq) {
+      ensureAudio();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      stopTone(); // ensure only one oscillator
+      osc = audioCtx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      osc.connect(gain);
+      osc.start();
+      audioState.textContent = `playing (${freq.toFixed(0)} Hz)`;
+    }
+
+    function stopTone() {
+      if (osc) {
+        try { osc.stop(); } catch {}
+        try { osc.disconnect(); } catch {}
+        osc = null;
+      }
+      if (audioCtx && audioCtx.state === 'running') {
+        // keep context for reuse; don't close
+      }
+      audioState.textContent = 'stopped';
+    }
+
+    volCtrl.addEventListener('input', () => {
+      ensureAudio();
+      const target = Number(volCtrl.value) / 100 * 0.5;
+      gain.gain.setTargetAtTime(target, audioCtx.currentTime, 0.01);
+    });
+
+    playBtn.addEventListener('click', () => {
+      const f = Number(elF.value);
+      startTone(f);
+    });
+
+    stopBtn.addEventListener('click', stopTone);
+
+    // When the frequency changes and a tone is playing, retune it live
+    function maybeRetuneAudio(f) {
+      if (osc && audioCtx) {
+        osc.frequency.setTargetAtTime(f, audioCtx.currentTime, 0.005);
+        audioState.textContent = `playing (${f.toFixed(0)} Hz)`;
+      }
+    }
+
+    // ====== UI sync and plots ======
+    function syncFreqInputs() {
+      elFNum.value = elF.value;
+      elFLabel.textContent = `(slider: ${elF.value})`;
+      update();
+      maybeRetuneAudio(Number(elF.value));
+    }
+    elF.addEventListener('input', syncFreqInputs);
+    elFNum.addEventListener('input', () => { elF.value = elFNum.value; syncFreqInputs(); });
+
+    function elementParams(kind, omega) {
+      if (kind === 'R') {
+        const X = R;
+        const Ipeak = Vm / R;
+        const Irms  = Ipeak / Math.SQRT2;
+        const Pavg  = (Vm * Vm) / (2 * R);
+        return { X, Ipeak, Irms, Pavg, phaseShift: 0 };
+      }
+      if (kind === 'L') {
+        const X = omega * L;
+        const Ipeak = Vm / X;
+        const Irms  = Ipeak / Math.SQRT2;
+        const Pavg  = 0;
+        return { X, Ipeak, Irms, Pavg, phaseShift: -Math.PI/2 };
+      }
+      if (kind === 'C') {
+        const X = 1 / (omega * C);
+        const Ipeak = Vm / X;
+        const Irms  = Ipeak / Math.SQRT2;
+        const Pavg  = 0;
+        return { X, Ipeak, Irms, Pavg, phaseShift: +Math.PI/2 };
+      }
+    }
+
+    function buildData(kind, f, periods, samples) {
+      const omega = 2 * Math.PI * f;
+      const T     = 1 / f;
+      const t = Array.from({length: samples}, (_, k) => k * (periods*T) / (samples - 1));
+      const v = t.map(tt => Vm * Math.sin(omega * tt));
+      const { X, Ipeak, Irms, Pavg, phaseShift } = elementParams(kind, omega);
+      const i = t.map(tt => Ipeak * Math.sin(omega * tt + phaseShift));
+      const p = t.map((_, k) => v[k] * i[k]);
+      return { t, v, i, p, omega, X, Ipeak, Irms, Pavg };
+    }
+
+    function updateKPIs(f, omega, X, Ipeak, Irms, Pavg) {
+      k_f.textContent    = f.toFixed(0);
+      k_w.textContent    = omega.toFixed(1);
+      k_x.textContent    = X.toFixed(3);
+      k_ip.textContent   = Ipeak.toFixed(3);
+      k_irms.textContent = Irms.toFixed(3);
+      k_pavg.textContent = Pavg.toFixed(2);
+    }
+
+    function drawPlot(t, v, i, p) {
+      const layout = {
+        paper_bgcolor: '#0f1a33',
+        plot_bgcolor:  '#0f1a33',
+        font: { color: '#e9eef5' },
+        margin: { l: 60, r: 20, t: 20, b: 45 },
+        legend: { orientation: "h", x: 0.01, y: 1.12 },
+        xaxis: { title: 'Time t (s)', gridcolor: '#1f2a44' },
+        yaxis: { title: 'v(t), i(t), p(t)', gridcolor: '#1f2a44' }
+      };
+      const traceV = { x: t, y: v, mode: 'lines', name: 'v(t) [V]' };
+      const traceI = { x: t, y: i, mode: 'lines', name: 'i(t) [A]' };
+      const traceP = { x: t, y: p, mode: 'lines', name: 'p(t) [W]' };
+      Plotly.newPlot('chart', [traceV, traceI, traceP], layout, {displaylogo:false});
+    }
+
+    function update() {
+      const kind    = elElement.value;
+      const f       = Number(elF.value);
+      const periods = Math.max(1, Number(elPeriods.value));
+      const samples = Math.max(200, Number(elSamples.value));
+      const { t, v, i, p, omega, X, Ipeak, Irms, Pavg } = buildData(kind, f, periods, samples);
+      drawPlot(t, v, i, p);
+      updateKPIs(f, omega, X, Ipeak, Irms, Pavg);
+    }
+
+    // Optional buttons if present
+    if (document.getElementById('reset')) {
+      document.getElementById('reset').addEventListener('click', () => {
+        elElement.value = 'R';
+        elF.value = 100; elFNum.value = 100;
+        elPeriods.value = 2;
+        elSamples.value = 2000;
+        update();
+        maybeRetuneAudio(100);
+      });
+    }
+    if (elPNG) {
+      elPNG.addEventListener('click', () => {
+        Plotly.downloadImage('chart', {format:'png', filename:'ac_elements_dashboard'});
+      });
+    }
+
+    window.addEventListener('load', update);
+  </script>
+</body>
+</html>
