@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Phasor Calculator</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root { font-family: system-ui, Arial; }
+    body { margin: 24px; }
+    .card { max-width: 880px; margin: 0 auto; padding: 20px; border: 1px solid #e5e5e5; border-radius: 12px; }
+    h1 { font-size: 22px; margin: 0 0 12px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-top: 10px; align-items: end; }
+    label { font-size: 14px; color: #333; }
+    input { width: 100%; padding: 8px 10px; border: 1px solid #bbb; border-radius: 8px; font-size: 14px; }
+    button { padding: 10px 14px; border: 0; border-radius: 10px; background: #0b5fff; color: white; font-size: 14px; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    .box { border: 1px solid #e5e5e5; border-radius: 10px; padding: 12px; background: #fafafa; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    canvas { width: 100%; height: 340px; border: 1px solid #e5e5e5; border-radius: 8px; background: #fff; }
+    .hint { font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Phasor Calculator, sum of two phasors</h1>
+
+    <div class="row">
+      <div>
+        <label>V1 magnitude</label>
+        <input id="m1" type="number" step="0.001" value="200">
+      </div>
+      <div>
+        <label>V1 angle, degrees</label>
+        <input id="a1" type="number" step="0.001" value="-150">
+      </div>
+      <div>
+        <label>V2 magnitude</label>
+        <input id="m2" type="number" step="0.001" value="150">
+      </div>
+      <div>
+        <label>V2 angle, degrees</label>
+        <input id="a2" type="number" step="0.001" value="0">
+      </div>
+    </div>
+
+    <div style="margin-top:14px; display:flex; gap:12px; align-items:center;">
+      <button id="calcBtn">Calculate</button>
+      <span class="hint">Angles are in degrees. Result angle is normalized to the interval from minus 180 to plus 180.</span>
+    </div>
+
+    <div class="grid">
+      <div class="box">
+        <strong>Rectangular form</strong>
+        <pre class="mono" id="rectOut">—</pre>
+        <strong>Polar form</strong>
+        <pre class="mono" id="polarOut">—</pre>
+        <strong>Time domain form with cosine reference</strong>
+        <pre class="mono" id="timeOut">—</pre>
+      </div>
+      <div class="box">
+        <strong>Phasor plot</strong>
+        <canvas id="plot" width="420" height="340"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const m1 = document.getElementById('m1');
+    const a1 = document.getElementById('a1');
+    const m2 = document.getElementById('m2');
+    const a2 = document.getElementById('a2');
+    const rectOut = document.getElementById('rectOut');
+    const polarOut = document.getElementById('polarOut');
+    const timeOut  = document.getElementById('timeOut');
+    const btn = document.getElementById('calcBtn');
+    const canvas = document.getElementById('plot');
+    const ctx = canvas.getContext('2d');
+
+    function deg2rad(d) { return d * Math.PI / 180; }
+    function rad2deg(r) { return r * 180 / Math.PI; }
+    function norm180(d) {
+      let x = d;
+      while (x > 180) x -= 360;
+      while (x <= -180) x += 360;
+      return x;
+    }
+
+    function polarToRect(mag, deg) {
+      const r = deg2rad(deg);
+      return { x: mag * Math.cos(r), y: mag * Math.sin(r) };
+    }
+    function rectToPolar(x, y) {
+      const mag = Math.hypot(x, y);
+      const ang = norm180(rad2deg(Math.atan2(y, x)));
+      return { mag, ang };
+    }
+
+    function drawAxes() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const w = canvas.width, h = canvas.height;
+      ctx.strokeStyle = '#eee';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(10, h/2); ctx.lineTo(w-10, h/2);
+      ctx.moveTo(w/2, 10); ctx.lineTo(w/2, h-10);
+      ctx.stroke();
+    }
+    function drawVector(color, x, y, scale) {
+      const cx = canvas.width/2, cy = canvas.height/2;
+      const X = cx + x*scale, Y = cy - y*scale;
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(X, Y); ctx.stroke();
+      // small arrow head
+      const ang = Math.atan2(-(Y-cy), X-cx);
+      const ah = 8;
+      ctx.beginPath();
+      ctx.moveTo(X, Y);
+      ctx.lineTo(X - ah*Math.cos(ang - Math.PI/6), Y + ah*Math.sin(ang - Math.PI/6));
+      ctx.lineTo(X - ah*Math.cos(ang + Math.PI/6), Y + ah*Math.sin(ang + Math.PI/6));
+      ctx.closePath(); ctx.fill();
+    }
+
+    function calculate() {
+      const M1 = parseFloat(m1.value || 0);
+      const A1 = parseFloat(a1.value || 0);
+      const M2 = parseFloat(m2.value || 0);
+      const A2 = parseFloat(a2.value || 0);
+
+      const r1 = polarToRect(M1, A1);
+      const r2 = polarToRect(M2, A2);
+      const sum = { x: r1.x + r2.x, y: r1.y + r2.y };
+      const pol = rectToPolar(sum.x, sum.y);
+
+      rectOut.textContent =
+        `V1 = ${r1.x.toFixed(4)} + j${r1.y.toFixed(4)}\n` +
+        `V2 = ${r2.x.toFixed(4)} + j${r2.y.toFixed(4)}\n` +
+        `Vsum = ${sum.x.toFixed(4)} + j${sum.y.toFixed(4)}`;
+
+      polarOut.textContent =
+        `|Vsum| = ${pol.mag.toFixed(3)} ,  angle = ${pol.ang.toFixed(3)} deg`;
+
+      timeOut.textContent =
+        `v_sum(t) = ${pol.mag.toFixed(3)} * cos(omega * t + ${pol.ang.toFixed(3)} deg)`;
+
+      // plot scaling
+      const maxMag = Math.max(M1, M2, pol.mag, 1);
+      const scale = Math.min(canvas.width, canvas.height) * 0.35 / maxMag;
+
+      drawAxes();
+      // V1 red, V2 blue, sum black
+      drawVector('#d11', r1.x, r1.y, scale);
+      drawVector('#16c', r2.x, r2.y, scale);
+      drawVector('#000', sum.x, sum.y, scale);
+    }
+
+    btn.addEventListener('click', calculate);
+    // live update
+    [m1,a1,m2,a2].forEach(el => el.addEventListener('input', calculate));
+    calculate();
+  </script>
+</body>
+</html>
