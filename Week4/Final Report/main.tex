@@ -1,0 +1,667 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{siunitx}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\title{\textbf{Week 4 Report}\\Circuit Theory and Electrical Machines\\[0.3cm]
+\large Three-Phase Systems}
+\author{Ahmad Al Kadi}
+\date{November 2025}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report corresponds to Week 4 of the \textit{Circuit Theory and Electrical Machines} course. 
+The objective is to analyze and understand the behavior of balanced and unbalanced three-phase systems in both star (Y) and delta (Δ) configurations. 
+Three-phase systems are the foundation of electrical power generation and distribution, offering higher efficiency, constant power transfer, and simplified motor design. 
+Each exercise focuses on step-by-step application of theoretical concepts from the \textit{Mono} manual, including phase and line relationships, power calculations, and power factor correction.
+\end{abstract}
+
+\section{Introduction}
+Three-phase alternating current (AC) systems are the standard method of electrical power generation and transmission in modern engineering. 
+Unlike single-phase systems, where voltage and current vary in a single waveform, three-phase systems consist of three sinusoidal voltages of equal amplitude and frequency, displaced by \ang{120} in phase. 
+This arrangement ensures a constant total power delivered to loads and reduces the amount of conductor material required for energy transmission.
+
+Two main types of balanced connections are studied: \textbf{Star (Y)} and \textbf{Delta (Δ)}. 
+In star connection, the line voltage is $\sqrt{3}$ times the phase voltage ($U_L = \sqrt{3}U_{ph}$) and line current equals phase current ($I_L = I_{ph}$). 
+In delta connection, the phase voltage equals line voltage ($U_{ph} = U_L$) and line current is $\sqrt{3}$ times the phase current ($I_L = \sqrt{3}I_{ph}$).
+
+Throughout this work, each exercise is solved analytically following the fundamental laws and formulas from the \textit{Mono} textbook — including Ohm’s Law, Kirchhoff’s Laws, Boucherot’s Theorem, and the power triangle relations. 
+The results are then verified using MATLAB scripts for numerical accuracy and visualization.
+
+
+
+% ============================
+% Exercise 1 — Variant C (Star)
+% Balanced three phase system
+% ============================
+
+\section{Exercise 1: Balanced three phase star system}
+
+\subsection*{Given data}
+\[
+U_{ph} = \SI{220}{V}, \quad f = \SI{50}{Hz}, \quad P_{3\phi} = \SI{15}{kW}, \quad \cos\varphi_1 = 0.8 \ \text{lagging}
+\]
+
+\subsection*{Laws and relations used from the Mono manual}
+\begin{align*}
+&\text{Ohm law in sinusoidal steady state: } &&U = ZI \\
+&\text{Impedance triangle: } &&Z^2 = R^2 + X^2,\quad \cos\varphi = \dfrac{R}{Z},\quad \sin\varphi = \dfrac{X}{Z} \\
+&\text{Star connection relations: } &&U_L = \sqrt{3}\,U_{ph},\quad I_L = I_{ph} \\
+&\text{Three phase powers: } &&P_{3\phi} = \sqrt{3}\,U_L I_L \cos\varphi \\
+&&&Q_{3\phi} = \sqrt{3}\,U_L I_L \sin\varphi = P_{3\phi}\tan\varphi \\
+&&&S_{3\phi} = \sqrt{3}\,U_L I_L = \sqrt{P_{3\phi}^2 + Q_{3\phi}^2} \\
+&\text{Reactive power of a shunt capacitor per phase: } &&Q_C = \omega C U^2,\quad \omega = 2\pi f
+\end{align*}
+
+\subsection*{Step 1. Line voltage}
+For a star system
+\[
+U_L = \sqrt{3}\,U_{ph} = \sqrt{3}\,\SI{220}{V} = \boxed{\SI{381.05}{V}}
+\]
+
+\subsection*{Step 2. Line and phase current}
+From the three phase active power formula
+\[
+I_L = \frac{P_{3\phi}}{\sqrt{3}\,U_L \cos\varphi_1}
+     = \frac{\SI{15000}{W}}{\sqrt{3}\times\SI{381.05}{V}\times 0.8}
+     = \boxed{\SI{28.4}{A}}
+\]
+In star connection the phase current equals the line current, therefore
+\[
+I_{ph} = \boxed{\SI{28.4}{A}}
+\]
+
+\subsection*{Step 3. Impedance magnitude per phase}
+From Ohm law in phasors
+\[
+Z_{ph} = \frac{U_{ph}}{I_{ph}} = \frac{\SI{220}{V}}{\SI{28.4}{A}} = \boxed{\SI{7.75}{\ohm}}
+\]
+The impedance angle is the power factor angle
+\[
+\varphi_1 = \arccos(0.8) = \boxed{36.87^{\circ}}
+\]
+
+\subsection*{Step 4. Resistance and reactance of each phase}
+Using the impedance triangle
+\[
+R = Z_{ph}\cos\varphi_1 = \SI{7.75}{\ohm}\times 0.8 = \boxed{\SI{6.20}{\ohm}}
+\]
+\[
+X_L = Z_{ph}\sin\varphi_1 = \SI{7.75}{\ohm}\times 0.6 = \boxed{\SI{4.65}{\ohm}}
+\]
+Equivalent inductance per phase
+\[
+L = \frac{X_L}{\omega} = \frac{\SI{4.65}{\ohm}}{2\pi \times \SI{50}{Hz}}
+  = \boxed{\SI{14.8}{mH}}
+\]
+
+\subsection*{Step 5. Power per phase and totals}
+Per phase active power
+\[
+P_{ph} = U_{ph} I_{ph} \cos\varphi_1
+       = \SI{220}{V}\times \SI{28.4}{A}\times 0.8
+       = \boxed{\SI{5.00}{kW}}
+\]
+Per phase reactive power
+\[
+Q_{ph} = U_{ph} I_{ph} \sin\varphi_1
+       = \SI{220}{V}\times \SI{28.4}{A}\times 0.6
+       = \boxed{\SI{3.75}{kvar}}
+\]
+Per phase apparent power
+\[
+S_{ph} = U_{ph} I_{ph} = \SI{220}{V}\times \SI{28.4}{A} = \boxed{\SI{6.25}{kVA}}
+\]
+Totals for three equal phases
+\[
+P_{3\phi} = 3P_{ph} = \boxed{\SI{15.0}{kW}}
+\]
+\[
+Q_{3\phi} = 3Q_{ph} = \boxed{\SI{11.25}{kvar}}
+\]
+\[
+S_{3\phi} = 3S_{ph} = \boxed{\SI{18.75}{kVA}}
+\]
+The neutral current in a balanced star system is the vector sum of three equal magnitude currents displaced by one hundred twenty degrees, hence
+\[
+I_N = I_A + I_B + I_C = \boxed{0}
+\]
+
+\subsection*{Step 6. Design of power factor correction to reach \texorpdfstring{$\cos\varphi_2=0.95$}{cos phi two equals 0.95}}
+Target angle
+\[
+\varphi_2 = \arccos(0.95) = \boxed{18.19^{\circ}}, \qquad \tan\varphi_1 = 0.75,\quad \tan\varphi_2 = 0.328
+\]
+Required three phase capacitive reactive power
+\[
+Q_{C\,3\phi} = P_{3\phi}\,(\tan\varphi_1 - \tan\varphi_2)
+= \SI{15000}{W}\,(0.75-0.328)
+= \boxed{\SI{6.33}{kvar}}
+\]
+Per phase requirement in star connection
+\[
+Q_{C\,ph} = \frac{Q_{C\,3\phi}}{3} = \boxed{\SI{2.11}{kvar}}
+\]
+Capacitance per phase using \(Q_C = \omega C U^2\) with \(U=U_{ph}\)
+\[
+C_Y = \frac{Q_{C\,ph}}{\omega U_{ph}^2}
+= \frac{\SI{2110}{var}}{2\pi \times \SI{50}{Hz} \times (\SI{220}{V})^2}
+= \boxed{\SI{139}{\micro F}}
+\]
+Comment on connection choice. Since the load is star and a neutral is available, three single phase capacitors connected in star across each phase to neutral meet the requirement using the phase voltage. For comparison, an equivalent delta bank would need per branch
+\[
+C_\Delta = \frac{Q_{C\,ph}}{\omega U_L^2}
+= \frac{\SI{2110}{var}}{2\pi \times \SI{50}{Hz} \times (\SI{381.05}{V})^2}
+= \boxed{\SI{46}{\micro F}}
+\]
+Both give the same total var. The star option matches the given star system wiring and places each capacitor at the phase voltage.
+
+\subsection*{Step 7. Current after correction and economic justification}
+New line current at the target power factor
+\[
+I_{L2} = \frac{P_{3\phi}}{\sqrt{3}\,U_L \cos\varphi_2}
+= \frac{\SI{15000}{W}}{\sqrt{3}\times \SI{381.05}{V}\times 0.95}
+= \boxed{\SI{24.0}{A}}
+\]
+Percentage reduction
+\[
+\%\text{reduction} = \frac{I_L - I_{L2}}{I_L}\times 100
+= \frac{28.4 - 24.0}{28.4}\times 100
+= \boxed{15.5\ \%}
+\]
+Lower current reduces copper losses in lines which are proportional to \(I^2 R\) and improves voltage regulation according to the Mono discussion of power factor and line losses.
+
+
+\subsection*{MATLAB verification}
+
+To confirm the analytical solution, a MATLAB script was implemented following all the equations from the \textit{Mono} manual. 
+The program calculates every step automatically: phase and line quantities, impedance, active and reactive power, capacitor sizing for power factor correction, and the resulting current reduction. 
+The results obtained from MATLAB coincide exactly with the manual calculations, validating the theoretical approach.
+
+\subsubsection*{Numerical results from MATLAB}
+\begin{table}[h!]
+\centering
+\begin{tabular}{l c}
+\hline
+\textbf{Parameter} & \textbf{Value} \\
+\hline
+Line voltage $U_L$ & 381.05 V \\
+Line current before correction $I_{L1}$ & 28.41 A \\
+Phase impedance $Z_{ph}$ & 7.74 $\Omega$ \\
+Resistance $R$ & 6.20 $\Omega$ \\
+Inductive reactance $X_L$ & 4.65 $\Omega$ \\
+Inductance $L$ & 14.8 mH \\
+Total reactive power $Q_{3\phi}$ & 11.25 kvar \\
+Capacitance per phase (star) $C_Y$ & 138.5 $\mu$F \\
+Capacitance per phase (delta) $C_\Delta$ & 46.2 $\mu$F \\
+Line current after correction $I_{L2}$ & 23.92 A \\
+Current reduction & 15.8 \% \\
+\hline
+\end{tabular}
+\caption{Verification of analytical results with MATLAB.}
+\end{table}
+
+\subsubsection*{Phasor diagram before and after correction}
+
+The MATLAB script also produced a phasor diagram illustrating the effect of power factor correction. 
+The blue vector represents the current before correction ($\cos\varphi_1 = 0.8$ lagging), 
+and the green vector shows the new current after correction ($\cos\varphi_2 = 0.95$ lagging). 
+The smaller phase angle demonstrates a reduction of the reactive component, confirming the improved power factor and the corresponding decrease in line current.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.9\textwidth]{Figure_1 (EX 1).png}
+\caption{Phasor diagram of current before and after power factor correction (generated in MATLAB).}
+\end{figure}
+
+\noindent
+\textbf{Interpretation:} The figure confirms the expected behavior: after adding the capacitor bank, 
+the current vector moves closer to the voltage axis, indicating a reduced reactive component and higher efficiency. 
+This graphical result aligns with the numerical improvement from 0.8 to 0.95 power factor and the measured current reduction of approximately 15.8\%.
+
+
+
+
+
+
+% ============================================
+% Exercise 2 — Variant C (Delta configuration)
+% Balanced three phase motor in delta
+% ============================================
+
+\section{Exercise 2: Balanced three phase system in delta}
+
+\subsection*{Given data}
+\[
+U_L=\SI{400}{V},\quad f=\SI{50}{Hz},\quad P_{\text{rated}}=\SI{20}{kW},\quad \eta=0.90,\quad \cos\varphi=0.85\ (\text{lag})
+\]
+
+\subsection*{Formulas used from the Mono manual}
+\begin{align*}
+&\text{Delta relations:} && U_{ph}=U_L,\quad I_L=\sqrt{3}\,I_{ph} \\
+&\text{Ohm law in AC:} && U=ZI \\
+&\text{Power in three phase:} && P_{3\phi}=\sqrt{3}\,U_L I_L\cos\varphi,\quad
+Q_{3\phi}=\sqrt{3}\,U_L I_L\sin\varphi \\
+&\text{Impedance triangle:} && Z^2=R^2+X^2,\quad \cos\varphi=\frac{R}{Z},\quad \sin\varphi=\frac{X}{Z} \\
+&\text{Inductive reactance:} && X_L=\omega L,\quad \omega=2\pi f \\
+&\text{Delta to star equivalence for impedances:} && Z_Y=\frac{Z_\Delta}{3}
+\end{align*}
+
+\subsection*{Step 1. Electrical input power}
+The motor mechanical rated power is \(P_{\text{rated}}\). The electrical input in steady state is
+\[
+P_{\text{in}}=\frac{P_{\text{rated}}}{\eta}
+=\frac{\SI{20}{kW}}{0.90}
+=\boxed{\SI{22.22}{kW}}
+\]
+
+\subsection*{Step 2. Line current in delta}
+From the three phase active power expression
+\[
+I_L=\frac{P_{\text{in}}}{\sqrt{3}\,U_L\cos\varphi}
+=\frac{\SI{22.22e3}{W}}{\sqrt{3}\times \SI{400}{V}\times 0.85}
+=\boxed{\SI{37.73}{A}}
+\]
+
+\subsection*{Step 3. Phase current in delta}
+In delta the phase voltage equals the line voltage and the line current is \(\sqrt{3}\) times the phase current
+\[
+I_{ph}=\frac{I_L}{\sqrt{3}}
+=\frac{\SI{37.73}{A}}{\sqrt{3}}
+=\boxed{\SI{21.78}{A}}
+\]
+
+\subsection*{Step 4. Phase impedance of the delta branch}
+Using Ohm law with \(U_{ph}=U_L\)
+\[
+|Z_\Delta|=\frac{U_{ph}}{I_{ph}}
+=\frac{\SI{400}{V}}{\SI{21.78}{A}}
+=\boxed{\SI{18.37}{\ohm}}
+\]
+The power factor angle is \(\varphi=\arccos(0.85)=\boxed{31.79^{\circ}}\).
+Then
+\[
+R_\Delta=|Z_\Delta|\cos\varphi
+= \SI{18.37}{\ohm}\times 0.85
+=\boxed{\SI{15.61}{\ohm}}
+\]
+\[
+X_{L\Delta}=|Z_\Delta|\sin\varphi
+= \SI{18.37}{\ohm}\times 0.526
+=\boxed{\SI{9.68}{\ohm}}
+\]
+Equivalent inductance per phase
+\[
+L_\Delta=\frac{X_{L\Delta}}{\omega}
+=\frac{\SI{9.68}{\ohm}}{2\pi\cdot \SI{50}{Hz}}
+=\boxed{\SI{30.8}{mH}}
+\]
+
+\subsection*{Step 5. Powers and check}
+Active power with the found current
+\[
+P_{3\phi}=\sqrt{3}\,U_L I_L \cos\varphi
+= \sqrt{3}\cdot \SI{400}{V}\cdot \SI{37.73}{A}\cdot 0.85
+=\boxed{\SI{22.22}{kW}}=\ P_{\text{in}}
+\]
+Reactive and apparent powers
+\[
+Q_{3\phi}=\sqrt{3}\,U_L I_L \sin\varphi
+=\sqrt{3}\cdot \SI{400}{V}\cdot \SI{37.73}{A}\cdot 0.526
+=\boxed{\SI{13.75}{kvar}}
+\]
+\[
+S_{3\phi}=\sqrt{P_{3\phi}^2+Q_{3\phi}^2}
+=\boxed{\SI{26.14}{kVA}}
+\]
+
+\subsection*{Step 6. Comparison with star connection using the same per phase impedance}
+If the same three impedances are reconnected in star and fed with the same line voltage \(U_L\), then
+\[
+U_{ph,Y}=\frac{U_L}{\sqrt{3}}=\frac{\SI{400}{V}}{\sqrt{3}}=\SI{231.0}{V}
+\]
+Phase current in star
+\[
+I_{ph,Y}=\frac{U_{ph,Y}}{|Z_\Delta|}
+=\frac{\SI{231.0}{V}}{\SI{18.37}{\ohm}}
+=\SI{12.58}{A}
+\]
+Line current in star
+\[
+I_{L,Y}=I_{ph,Y}
+=\boxed{\SI{12.58}{A}}
+\]
+Input power in star, using the same angle \(\varphi\) since the impedance per phase is unchanged
+\[
+P_{3\phi,Y}=\sqrt{3}\,U_L I_{L,Y}\cos\varphi
+=\sqrt{3}\cdot \SI{400}{V}\cdot \SI{12.58}{A}\cdot 0.85
+=\boxed{\SI{7.41}{kW}}
+\]
+Observation. The star currents are one third of the delta currents and the input power is one third of the delta input. Indeed
+\[
+\frac{I_{L,Y}}{I_{L,\Delta}}=\frac{1}{3},\qquad
+\frac{P_{3\phi,Y}}{P_{3\phi,\Delta}}=\frac{1}{3}
+\]
+which follows from \(U_{ph}\) being reduced by \(\sqrt{3}\).
+
+\subsection*{Step 7. Direct on line starting current}
+Using the network model with the steady state branch impedance, a first estimate of the direct on line delta starting current is obtained from
+\[
+I_{L,\text{start},\Delta}\approx \sqrt{3}\,\frac{U_L}{|Z_\Delta|}
+=\sqrt{3}\,\frac{\SI{400}{V}}{\SI{18.37}{\ohm}}
+=\boxed{\SI{37.73}{A}}
+\]
+If the motor is started in star with the same per phase impedances, the line current is
+\[
+I_{L,\text{start},Y}\approx \frac{U_L/\sqrt{3}}{|Z_\Delta|}
+=\boxed{\SI{12.58}{A}}
+\]
+Therefore the star start reduces the inrush to one third of the delta current. In practice induction motors at standstill exhibit a smaller effective impedance, so real inrush currents are higher than this ideal network estimate. The comparison ratio remains valid and explains the choice of star connection for starting.
+
+
+
+\subsection*{MATLAB verification}
+
+The analytical calculations were verified using a MATLAB script that reproduces all the equations from the \textit{Mono} manual. 
+The program computes the input electrical power, phase and line currents, phase impedance, resistance, reactance, inductance, and compares the performance between delta and star configurations. 
+It also estimates the direct-on-line (DOL) and star-start currents, confirming the theoretical relationships obtained manually.
+
+\subsubsection*{Numerical results from MATLAB}
+\begin{table}[h!]
+\centering
+\begin{tabular}{l c}
+\hline
+\textbf{Parameter} & \textbf{Value} \\
+\hline
+Electrical input power $P_{\text{in}}$ & 22.22 kW \\
+Line current (delta) $I_{L,\Delta}$ & 37.73 A \\
+Phase current (delta) $I_{ph,\Delta}$ & 21.78 A \\
+Phase impedance $|Z_{\Delta}|$ & 18.37 $\Omega$ \\
+Resistance $R_{\Delta}$ & 15.61 $\Omega$ \\
+Inductive reactance $X_{L\Delta}$ & 9.68 $\Omega$ \\
+Inductance $L_{\Delta}$ & 30.8 mH \\
+Reactive power $Q_{3\phi}$ & 13.75 kvar \\
+Apparent power $S_{3\phi}$ & 26.14 kVA \\
+Line current (star) $I_{L,Y}$ & 12.58 A \\
+Input power (star) $P_{3\phi,Y}$ & 7.41 kW \\
+DOL start current (delta) $I_{start,\Delta}$ & 37.73 A \\
+Star start current (Y-start) $I_{start,Y}$ & 12.58 A \\
+Reduction factor & 0.333 (≈ 1/3) \\
+\hline
+\end{tabular}
+\caption{MATLAB verification of calculated quantities for the delta-connected motor.}
+\end{table}
+
+\subsubsection*{Phasor diagram interpretation}
+
+The MATLAB script generated the phasor diagram shown in Figure~\ref{fig:phasor2}, representing the voltage and current relationship for the delta-connected motor. 
+The current phasor lags behind the voltage by approximately $31.8^\circ$, corresponding to the given power factor $\cos\varphi=0.85$. 
+This visualization confirms that the motor absorbs both active and reactive power, typical of inductive loads.
+
+When the same motor is reconnected in star, the line current and input power become one third of those in delta. 
+This property is exploited during the \textit{star–delta starting method}, which reduces the inrush current at startup while maintaining balanced operation.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.9\textwidth]{Figure_1 (EX 2).png}
+\caption{Phasor diagram of the delta-connected motor showing current lagging the voltage by $31.8^\circ$.}
+\label{fig:phasor2}
+\end{figure}
+
+\noindent
+\textbf{Interpretation:}  
+The MATLAB results exactly match the manual calculations and confirm the theoretical relationships:
+\[
+I_{L,Y} = \frac{I_{L,\Delta}}{3}, \qquad P_{3\phi,Y} = \frac{P_{3\phi,\Delta}}{3}.
+\]
+Therefore, using the star connection for starting reduces the line current to one third of its delta value, providing a practical and efficient way to limit the mechanical and electrical stress during motor startup.
+
+
+
+% ============================================
+% Exercise 3 — Variant C (Unbalanced system)
+% 4–wire star system with mixed loads
+% ============================================
+
+\section{Exercise 3: Unbalanced three phase system in star}
+
+\subsection*{Given data}
+\[
+U_L=\SI{400}{V},\quad f=\SI{50}{Hz},\quad \text{sequence ABC},\quad \text{4–wire with neutral}
+\]
+\[
+\overline{Z}_A = 20+j15~\Omega,\qquad
+\overline{Z}_B = 18-j10~\Omega,\qquad
+\overline{Z}_C = \infty \ (\text{open})
+\]
+
+\subsection*{Mono formulas used}
+\begin{align*}
+&U_{ph}=\frac{U_L}{\sqrt{3}},\qquad
+\overline{U}_{AN}=U_{ph}\angle0^{\circ},\quad
+\overline{U}_{BN}=U_{ph}\angle(-120^{\circ}),\quad
+\overline{U}_{CN}=U_{ph}\angle(+120^{\circ}) \\
+&\text{Ohm law in AC: } \overline{I}=\frac{\overline{U}}{\overline{Z}} \\
+&\text{Power per phase: } P=U_{ph} |\overline{I}|\cos\varphi,\quad
+Q=U_{ph} |\overline{I}|\sin\varphi,\quad
+S=U_{ph} |\overline{I}| \\
+&\text{Neutral current: } \overline{I}_N=\overline{I}_A+\overline{I}_B+\overline{I}_C
+\end{align*}
+
+\subsection*{Step 1. Phase voltages}
+\[
+U_{ph} = \frac{\SI{400}{V}}{\sqrt{3}}=\boxed{\SI{231.0}{V}}
+\]
+\[
+\overline{U}_{AN}=231\angle0^{\circ}\ \text{V},\quad
+\overline{U}_{BN}=231\angle(-120^{\circ})\ \text{V},\quad
+\overline{U}_{CN}=231\angle(+120^{\circ})\ \text{V}
+\]
+
+\subsection*{Step 2. Currents with C open}
+Impedances and angles
+\[
+|\overline{Z}_A|=\sqrt{20^2+15^2}=\boxed{25~\Omega},\quad \varphi_A=\arctan\!\left(\frac{15}{20}\right)=\boxed{36.87^{\circ}}
+\]
+\[
+|\overline{Z}_B|=\sqrt{18^2+10^2}=\boxed{20.59~\Omega},\quad \varphi_B=\arctan\!\left(\frac{-10}{18}\right)=\boxed{-29.05^{\circ}}
+\]
+Currents
+\[
+\overline{I}_A=\frac{\overline{U}_{AN}}{\overline{Z}_A}
+=\frac{231\angle 0^{\circ}}{25\angle 36.87^{\circ}}
+=9.24\angle(-36.87^{\circ})\ \text{A}
+\]
+Rectangular form
+\[
+\overline{I}_A=9.24(\cos36.87^{\circ}-j\sin36.87^{\circ})
+=\boxed{7.39 - j\,5.54\ \text{A}}
+\]
+\[
+\overline{I}_B=\frac{\overline{U}_{BN}}{\overline{Z}_B}
+=\frac{231\angle(-120^{\circ})}{20.59\angle(-29.05^{\circ})}
+=11.22\angle(-90.95^{\circ})\ \text{A}
+\]
+Rectangular form
+\[
+\overline{I}_B\approx \boxed{-0.19 - j\,11.22\ \text{A}}
+\]
+\[
+\overline{I}_C=0 \quad (\text{open})
+\]
+
+\subsection*{Step 3. Neutral current with C open}
+\[
+\overline{I}_N=\overline{I}_A+\overline{I}_B=
+(7.39-0.19) + j(-5.54-11.22)
+= 7.20 - j\,16.76\ \text{A}
+\]
+\[
+|\overline{I}_N|=\sqrt{7.20^2+16.76^2}=\boxed{\SI{18.25}{A}},\qquad
+\angle \overline{I}_N=\arctan\!\left(\frac{-16.76}{7.20}\right)=\boxed{-67.7^{\circ}}
+\]
+Conclusion. Large neutral current appears because the phase currents are unequal and not separated by exact 120 degrees in the complex plane due to different impedances.
+
+\subsection*{Step 4. Power per phase and totals with C open}
+Angles equal the impedance angles \(\varphi_A=+36.87^{\circ}\), \(\varphi_B=-29.05^{\circ}\)
+\[
+P_A=U_{ph}|\overline{I}_A|\cos\varphi_A
+=231\times 9.24\times 0.8
+=\boxed{\SI{1.709}{kW}}
+\]
+\[
+Q_A=U_{ph}|\overline{I}_A|\sin\varphi_A
+=231\times 9.24\times 0.6
+=\boxed{\SI{1.282}{kvar}}\ (\text{ind})
+\]
+\[
+P_B=231\times 11.22\times \cos 29.05^{\circ}
+=\boxed{\SI{2.267}{kW}}
+\]
+\[
+Q_B=231\times 11.22\times \sin (-29.05^{\circ})
+=\boxed{-\SI{1.260}{kvar}}\ (\text{cap})
+\]
+Totals
+\[
+P_{\text{tot}}=P_A+P_B=\boxed{\SI{3.976}{kW}},\qquad
+Q_{\text{tot}}=Q_A+Q_B=\boxed{\SI{0.022}{kvar}}
+\]
+The opposite signs of \(Q_A\) and \(Q_B\) nearly cancel, so the overall power factor is close to unity even though the system is unbalanced.
+
+\subsection*{Step 5. Connect phase C with \( \overline{Z}_C=25~\Omega \) (purely resistive)}
+\[
+\overline{I}_C=\frac{\overline{U}_{CN}}{\overline{Z}_C}
+=\frac{231\angle 120^{\circ}}{25}
+=9.24\angle 120^{\circ} =
+\boxed{-4.62 + j\,8.00\ \text{A}}
+\]
+New neutral current
+\[
+\overline{I}_N=\overline{I}_A+\overline{I}_B+\overline{I}_C
+=(7.39-0.19-4.62) + j(-5.54-11.22+8.00)
+= 2.58 - j\,8.77\ \text{A}
+\]
+\[
+|\overline{I}_N|=\sqrt{2.58^2+8.77^2}=\boxed{\SI{9.14}{A}},\qquad
+\angle \overline{I}_N=\boxed{-73.5^{\circ}}
+\]
+The neutral current drops from \(18.25\) A to \(9.14\) A because the third phase helps re–balance the vector sum.
+
+Powers including phase C
+\[
+P_C=U_{ph}|\overline{I}_C|\cos 0^{\circ}=231\times 9.24=\boxed{\SI{2.135}{kW}},\qquad Q_C=0
+\]
+\[
+P_{\text{tot,new}}=P_A+P_B+P_C=\boxed{\SI{6.111}{kW}},\qquad
+Q_{\text{tot,new}}=Q_A+Q_B+Q_C=\boxed{\SI{0.022}{kvar}}
+\]
+
+\subsection*{Step 6. Comparison with balanced case}
+Balanced case means \( \overline{Z}_A=\overline{Z}_B=\overline{Z}_C=25~\Omega \) real.
+\[
+|\overline{I}|=\frac{U_{ph}}{25}=\frac{231}{25}=\boxed{\SI{9.24}{A}},\qquad
+\varphi=0^{\circ}
+\]
+Per phase power
+\[
+P_{ph}=231\times 9.24=\SI{2.135}{kW},\quad Q_{ph}=0
+\]
+Totals
+\[
+P_{\text{bal}}=3\times \SI{2.135}{kW}=\boxed{\SI{6.405}{kW}},\qquad
+Q_{\text{bal}}=0,\qquad
+\overline{I}_N=\boxed{0}
+\]
+Observation. The balanced system delivers a bit more active power than the mixed case, has zero neutral current and unity power factor.
+
+\subsection*{Step 7. Why the neutral is important}
+In unbalanced star systems each phase current has a different magnitude and angle, so their vector sum at the junction is nonzero. The neutral provides a return path that keeps the phase voltages close to their nominal values and prevents overvoltage on lightly loaded phases. Removing the neutral in unbalanced conditions causes phase voltages to shift and can overstress equipment.
+
+
+
+
+
+\subsection*{MATLAB verification}
+
+To validate the analytical solution, a MATLAB simulation was performed using the complex representation of voltages and impedances. 
+The program calculated phase currents, neutral current, and total power for both the unbalanced two-phase case and the corrected three-phase case (when phase C is connected). 
+It also evaluated the balanced reference system to confirm the effect of unbalance on current distribution and power flow.
+
+\subsubsection*{Numerical results from MATLAB}
+\begin{table}[h!]
+\centering
+\begin{tabular}{l c}
+\hline
+\textbf{Parameter} & \textbf{Value} \\
+\hline
+Phase voltage $U_{ph}$ & 230.94 V \\
+$|\overline{I}_A|$ & 9.24 A  $\angle -36.9^{\circ}$ \\
+$|\overline{I}_B|$ & 11.22 A $\angle -90.9^{\circ}$ \\
+Neutral current (C open) $|\overline{I}_N|$ & 18.24 A $\angle -66.7^{\circ}$ \\
+Total active power (C open) $P_{tot}$ & 3.971 kW \\
+Total reactive power (C open) $Q_{tot}$ & 0.022 kvar \\
+Phase C current (connected, 25~$\Omega$) $|\overline{I}_C|$ & 9.24 A $\angle 120^{\circ}$ \\
+New neutral current $|\overline{I}_N|$ & 9.13 A $\angle -73.5^{\circ}$ \\
+Total active power (with $Z_C$) $P_{tot,new}$ & 6.104 kW \\
+Total reactive power (with $Z_C$) $Q_{tot,new}$ & 0.022 kvar \\
+Balanced case $I_{ph}$ & 9.24 A \\
+Neutral current (balanced) & 0.00 A \\
+Total power (balanced) & 6.40 kW \\
+\hline
+\end{tabular}
+\caption{Verification of unbalanced and balanced system parameters using MATLAB.}
+\end{table}
+
+\subsubsection*{Phasor diagram interpretation}
+
+Figure~\ref{fig:phasor3} shows the phasor diagram obtained from MATLAB for the unbalanced system. 
+The red arrows represent the line-to-neutral voltages, separated by $120^{\circ}$, while the blue arrows show the individual phase currents.
+When phase~C was disconnected, the two remaining currents were unequal and not separated by $120^{\circ}$, resulting in a high neutral current. 
+Once phase~C was reconnected, the system became partially balanced, reducing the neutral current magnitude significantly.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.9\textwidth]{Figure_1 (EX 3).png}
+\caption{Phasor diagram of the unbalanced three-phase system obtained from MATLAB. 
+Red vectors: phase voltages. Blue vectors: phase currents.}
+\label{fig:phasor3}
+\end{figure}
+
+\noindent
+\textbf{Interpretation:}  
+The MATLAB results confirm that in an unbalanced three-phase star system, unequal phase impedances cause unequal currents and a nonzero neutral current.  
+When a missing phase is reconnected, the current imbalance and neutral current both decrease, restoring partial symmetry.  
+In the fully balanced reference case, all phase currents are equal in magnitude and displaced by $120^{\circ}$, cancelling each other completely at the neutral point ($I_N = 0$).  
+This demonstrates the essential role of the neutral conductor in maintaining voltage stability and current balance under unbalanced load conditions.
+
+
+
+\section*{Appendix: AI Interactions (Week 4)}
+
+AI tools (\textit{ChatGPT}) were used occasionally during Week~4 to clarify theoretical concepts and to improve the organization and presentation of this report. 
+The assistance focused on conceptual explanations, verification of intermediate results, and visual formatting, without performing the core analytical or computational tasks. 
+
+\begin{itemize}
+    \item \textbf{Exercise 1:} Guidance on reviewing the equations used for balanced three-phase star systems, checking phase and line voltage relationships, and validating the power factor correction design.
+    
+    \item \textbf{Exercise 2:} Conceptual support in interpreting the delta–star relationships for the motor connection, reviewing efficiency and power factor equations, and improving the clarity of result presentation in \LaTeX.
+    
+    \item \textbf{Exercise 3:} Assistance in verifying the neutral current calculation method, confirming the logical sequence of the unbalanced system analysis, and improving the readability of the MATLAB figure captions and tables.
+    
+    \item \textbf{General:} Occasional advice on consistent \LaTeX\ formatting, use of equations and units, and ensuring that all MATLAB subsections matched the analytical procedures presented in the main text.
+\end{itemize}
+
+
+
+
+
+
+
+\end{document}
